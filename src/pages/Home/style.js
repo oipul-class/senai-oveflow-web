@@ -1,5 +1,6 @@
 import styled from "styled-components";
 
+import { FaSignOutAlt } from "react-icons/fa";
 
 export const Container = styled.div`
     width: 100vw;
@@ -23,6 +24,40 @@ export const Header = styled.header`
     border-bottom: 1px solid var(--darkGray);
 
     box-shadow: 0px 1px 5px var(--darkGray);
+`;
+
+export const Logo = styled.img`
+    width: 60px;
+    height: 60px;
+    
+    margin: 20px;
+    margin-top: 40px;
+    border-radius: 50%;
+    border: 2px solid var(--dark);
+
+    box-shadow: 0px 0px 5px var(--dark);
+
+    cursor: pointer;
+
+    transition: .2s;
+
+    :hover {
+        transform: scale(1.1);
+        box-shadow: 0px 0px 15px var(--dark);
+    }
+`;
+
+export const IconSignOut = styled(FaSignOutAlt)`
+    font-size: 30px;
+    margin-right: 10px;
+
+    cursor: pointer;
+
+    transition: 0.1s;
+   
+    :hover {
+        color: var(--dark)
+    }
 `;
 
 export const Content = styled.div`
@@ -54,7 +89,19 @@ export const ProfileContainer = styled.div`
     }
 `;
 
-export const FeedContainer = styled.div``;
+export const FeedContainer = styled.div`
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+
+    overflow-y: auto;   
+
+    padding-top: 10px;
+
+
+
+`;
 
 export const QuestionCard = styled.article`
     width: 80%;
@@ -100,13 +147,64 @@ export const QuestionCard = styled.article`
         }
     }
 
+
+    > footer {
+
+        > h1 {
+            font-weight: bold;
+            cursor: pointer;
+            transition: .2;
+
+            :hover {
+                color: var(--primary)     
+            }
+        }
+
+        > section {
+            margin-top: 10px;
+            border-radius: 4px;
+            padding: 5px;
+            background-color: var(--dark);
+
+            > Header {
+                display: flex;
+                align-items: center;
+                gap: 10px;
+
+                > img {
+                    width: 30px;
+                    height: 30px;
+                    border-radius: 15px;
+                }
+            }
+
+            > p {
+                margin-top: 10px;
+                width: 100%;
+                padding: 10px 5px;
+                border-left: 2px solid var(--primary);
+            }
+
+        }
+
+        > form {
+            width: 100%;
+            margin-top: 5px;
+
+            display: flex;
+            gap: 5px;
+
+            > textarea {
+                flex: 1;
+            }
+        }
+
+    }
 `;
 
 export const ActionsContainer = styled.div`
-    display: flex;
-    flex-direction: column;
-    align-items: center;
+    margin-top: 10px;
 
-    padding-top: 10px
+    text-align: center;
 `;
 
