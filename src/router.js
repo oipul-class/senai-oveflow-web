@@ -1,9 +1,21 @@
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import Home from "./pages/Home";
+import { isSignedIn } from "./services/security";
 
-const { BrowserRouter, Route, Switch } = require("react-router-dom");
+const { BrowserRouter, Route, Switch, Redirect } = require("react-router-dom");
 //Switch é o que ira fazer as trocas baseado nos Route's configurados
+
+function PrivateRoute({children, ...rest}) {
+
+    if (isSignedIn()) {
+        return (<Route {...rest}>
+            {children}
+        </Route>);
+    } else {
+        return <Redirect to="/"/>
+    }
+}
 
 //roterizador do navegador
 function Router() {
@@ -19,9 +31,9 @@ function Router() {
                     <Register/>
                 </Route>
 
-                <Route path="/home">
+                <PrivateRoute>
                     <Home/>
-                </Route>
+                </PrivateRoute>
 
             </Switch>
         </BrowserRouter>
