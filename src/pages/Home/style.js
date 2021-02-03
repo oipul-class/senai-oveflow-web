@@ -155,7 +155,7 @@ export const QuestionCard = styled.article`
             font-weight: bold;
             cursor: pointer;
             transition: .2;
-
+            user-select: none;
             :hover {
                 color: var(--primary)     
             }
