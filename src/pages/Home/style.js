@@ -209,3 +209,17 @@ export const ActionsContainer = styled.div`
     text-align: center;
 `;
 
+export const FormNewQuestion = styled.form`
+    min-width: 300px;
+    width: 400px;
+    
+    display: flex;
+    flex-direction: column;
+    gap: 10px;  
+
+    > div {
+        display: flex;
+        flex-wrap: wrap;
+    }
+    
+`;
