@@ -11,7 +11,7 @@ import {
   FormNewQuestion,
 } from "./style";
 import { useHistory } from "react-router-dom";
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
 
 import defaultProfileImg from "../../assets/defaultProfilePhoto.png";
@@ -22,7 +22,6 @@ import Modal from "../../components/modal";
 import Input from "../../components/input";
 import Select from "../../components/select";
 import Tag from "../../components/tag";
-
 
 function Profile() {
   const student = getUser();
@@ -74,11 +73,15 @@ function Awnser({ Answer }) {
 }
 
 function Question({ question }) {
-  const [questionAnswers, setQuestionAnswers] = useState(question.Answers);
+  const [questionAnswers, setQuestionAnswers] = useState([]);
 
   const [userAnswer, setUserAwnswer] = useState("");
 
   const [answersVisible, setAnswersVisible] = useState(false);
+
+  useEffect(() => {
+    setQuestionAnswers(question.Answers)
+  }, [question.Answers])
 
   const handleUserAnswer = (event) => {
     setUserAwnswer(event.target.value);
@@ -146,8 +149,8 @@ function Question({ question }) {
             "Seja o primeiro a responder"
           ) : (
             <>
-              {question.Answers.length}{" "}
-              {question.Answers.length > 1 ? "Respostas" : "Resposta"}{" "}
+              {questionAnswers.length}{" "}
+              {questionAnswers.length > 1 ? "Respostas" : "Resposta"}{" "}
             </>
           )}
         </h1>
@@ -169,16 +172,25 @@ function Question({ question }) {
   );
 }
 
-function NewQuestion() {
-
-  const [questionTags, setQuestionTags] = useState();
+function NewQuestion({handleReload}) {
+  const [newQuestion, setNewQuestion] = useState({
+    title: "",
+    description: "",
+    gist: "",
+  });
 
   const [categories, setCategories] = useState([]);
 
-  useEffect(() => {
+  const [categoriesSel, setCategoriesSel] = useState([]);
 
-    const laodCategories = async () => {
-      
+  const [questionImage, setquestionImage] = useState(null);
+
+  const questionImageRef = useRef(); //referencia da tag img
+
+  const categoriesRef = useRef();
+
+  useEffect(() => {
+    const loadCategories = async () => {
       try {
         const response = await api.get("/categories");
         setCategories(response.data);
@@ -186,34 +198,134 @@ function NewQuestion() {
         console.error(error);
         alert(error);
       }
+    };
+
+    loadCategories();
+  }, []);
+
+  const handleCategories = (event) => {
+    const idSel = event.target.value;
+
+    const categorySel = categories.find((c) => c.id.toString() === idSel);
+
+    if (!categoriesSel.includes(categorySel)) {
+      setCategoriesSel([...categoriesSel, categorySel]);
+
+      event.target[event.target.selectedIndex].disabled = true;
+      event.target.value = "";
+    }
+  };
+
+  const handleImage = (event) => {
+    if (event.target.files[0]) {
+      questionImageRef.current.src = URL.createObjectURL(event.target.files[0]); //colando a image selecionada pelo usuario
+      questionImageRef.current.style.display = "flex";
+    } else {
+      questionImageRef.current.src = "";
+      questionImageRef.current.style.display = "none";
+    }
+    setquestionImage(event.target.files[0]);
+  };
+
+  const handleUnselCategorie = (idUnsel) => {
+    setCategoriesSel(categoriesSel.filter((c) => c.id !== idUnsel));
+
+    const { options } = categoriesRef.current;
+
+    for (let forIndex = 0; forIndex < options.length; forIndex++) {
+      if (options[forIndex].value === idUnsel.toString())
+        options[forIndex].disabled = false;
+    }
+  };
+
+  const handleInput = (event) => {
+    setNewQuestion({ ...newQuestion, [event.target.id]: event.target.value });
+  };
+
+  const handleAddNewQuestion = async (event) => {
+    event.preventDefault();
+
+    const data = new FormData();
+
+    data.append("title", newQuestion.title);
+    data.append("description", newQuestion.description);
+    data.append("gist", newQuestion.gist);
+    
+    const categories = categoriesSel.reduce((s, c) => (s += c.id + ","), "");
+
+    data.append("categories", categories.substr(0 , categories.length - 1));
+
+    if(questionImage) data.append("image", questionImage);
+
+    try {
+
+      await api.post("/questions", data, {
+        headers: {
+          "Content-type": "multipart/form-data",
+        }
+      })
+
+      handleReload();
+
+    } catch (error) {
+      console.log(error)
     }
 
-    laodCategories();
-  }, [])
+  };
+  
+  return (
+    <FormNewQuestion onSubmit={handleAddNewQuestion}>
+      <Input
+        id="title"
+        label="titulo"
+        value={newQuestion.title}
+        handler={handleInput}
+      />
+      <Input
+        id="description"
+        label="Descrição"
+        value={newQuestion.description}
+        handler={handleInput}
+      />
+      <Input
+        id="gist"
+        label="Gist"
+        value={newQuestion.gist}
+        handler={handleInput}
+      />
+      <Select
+        id="categorias"
+        label="Categorias"
+        handler={handleCategories}
+        ref={categoriesRef}
+      >
+        <option hidden value="">
+          {" "}
+          Escolha uma categoria{" "}
+        </option>
+        {categories.map((c) => (
+          <option key={c.id} value={c.id}>
+            {c.description}
+          </option>
+        ))}
+      </Select>
 
-  return(
-    <FormNewQuestion>
-        <Input id="title" label="titulo"/>
-        <Input id="description" label="Descrição"/>
-        <Input id="gist" label="Gist"/>
-        <Select id="categorias" label="Categorias">
-          <option hidden value=""> Escolha uma categoria </option>
-          {categories.map(c => (
-            <option value={c.description}>{c.description}</option>
-          ))}
-        </Select>
+      <div>
+        {categoriesSel.map((c) => (
+          <Tag
+            key={c.id}
+            info={c.description}
+            handleClose={() => {
+              handleUnselCategorie(c.id);
+            }}
+          ></Tag>
+        ))}
+      </div>
 
-        <div>
-          <Tag info="Banco de Dados"/>
-          <Tag info="BackEnd"/>
-          <Tag info="FrontEnd"/>
-          <Tag info="Android"/>
-        </div>
-
-        <input type="file"/>
-        <button>Enviar</button>
-
-      </FormNewQuestion>
+      <input type="file" onChange={handleImage} />
+      <img ref={questionImageRef} alt="pre-visualization" />
+      <button>Enviar</button>
+    </FormNewQuestion>
   );
 }
 
@@ -222,7 +334,9 @@ function Home() {
 
   const [questions, setQuestions] = useState([]);
 
-  const [reload, setReload ] = useState(null);
+  const [reload, setReload] = useState(null);
+
+  const [showNewQuestion, setShowNewQuestion] = useState(false);
 
   useEffect(() => {
     const loadQuestion = async () => {
@@ -241,18 +355,26 @@ function Home() {
   }
 
   function handleReload() {
+    setShowNewQuestion(false);
     setReload(Math.random());
   }
 
-  return ( 
+  return (
     <>
-      <Modal title="Faça uma pergunta">
-        <NewQuestion/>
-      </Modal>
-    
+      {showNewQuestion && (
+        <Modal
+          title="Faça uma pergunta"
+          handleClose={() => {
+            setShowNewQuestion(false);
+          }}
+        >
+          <NewQuestion handleReload={handleReload}/>
+        </Modal>
+      )}
+
       <Container>
         <Header>
-          <Logo src={siteLogo} onClick={handleReload}/>
+          <Logo src={siteLogo} onClick={handleReload} />
           <IconSignOut onClick={handleSignOut} />
         </Header>
 
@@ -262,16 +384,21 @@ function Home() {
           </ProfileContainer>
           <FeedContainer>
             {questions.map((q) => (
-              <Question question={q} />
+              <Question key={q.id} question={q} />
             ))}
           </FeedContainer>
           <ActionsContainer>
-            <button>Fazer uma pergunta</button>
+            <button
+              onClick={() => {
+                setShowNewQuestion(true);
+              }}
+            >
+              Fazer uma pergunta
+            </button>
           </ActionsContainer>
         </Content>
       </Container>
     </>
-
   );
 }
 
