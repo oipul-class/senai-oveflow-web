@@ -3,11 +3,15 @@ import Input from "../../components/input";
 import { Link, useHistory } from "react-router-dom"; //uma tag para redirecionamento de page
 import { api } from "../../services/api";
 import { useState } from "react";
+import Loading from "../../components/loading";
+import Alert from "../../components/alert";
 
 function Register() {
   const history = useHistory();
 
   const [validPassword, setValidPassword] = useState("");
+
+  const [loading, setLoading] = useState(false);
 
   const [cadastro, setCadastro] = useState({
     ra: "",
@@ -48,21 +52,27 @@ function Register() {
     console.log(cadastro);
     try {
       if (cadastro.password === validPassword) {
+        setLoading(true)
         const response = await api.post("/students", cadastro);
-
+        setLoading(false)
         console.log(response.data);
         history.push("/home");
       } else {
+        setLoading(false)
         alert("senha não é igual a confirmação da senha");
       }
     } catch (error) {
+      setLoading(false)
       console.error(error);
       alert(error.response.data.error);
     }
   };
 
   return (
-    <Container>
+    <>
+      <Alert/>
+      {loading ? <Loading/> : <></>}
+      <Container>
       <FormLogin onSubmit={handleSubmit}>
         <Header>
           <h1>BEM VINDO AO SENAI OVERFLOW</h1>
@@ -120,6 +130,7 @@ function Register() {
         </Body>
       </FormLogin>
     </Container>
+    </>
   );
 }
 

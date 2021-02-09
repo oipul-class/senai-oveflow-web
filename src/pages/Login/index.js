@@ -5,6 +5,9 @@ import { Link, useHistory } from "react-router-dom";
 import { api } from "../../services/api";
 import { useState } from "react";
 import { signIn } from "../../services/security";
+import Loading from "../../components/loading";
+import Alert from "../../components/alert";
+
 
 function Login() {
   const history = useHistory();
@@ -14,6 +17,11 @@ function Login() {
     password: "",
   });
 
+  const [ alertMessage, setAlertMessage ] = useState();
+
+
+  const [loading, setLoading] = useState(false);
+
   const handleInput = (event) => {
     setLogin({ ...login, [event.target.id]: event.target.value });
   };
@@ -22,20 +30,28 @@ function Login() {
     event.preventDefault();
 
     try {
+      setLoading(true);
+
       const response = await api.post("/sessions", login);
+
+      setLoading(false);
 
       signIn(response.data);
     
       history.push("/home");
     } catch (error) {
+      setLoading(false);
       console.error(error);
-      alert(error.response.data.error);
+      setAlertMessage({title: "Ops...", description: error.response.data.error});
     }
 
   };
 
   return (
-    <Container>
+    <>
+      <Alert message={alertMessage} type={"error"} handleClose={setAlertMessage}/>
+      {loading ? <Loading /> : <> </>}
+      <Container>
       <FormLogin onSubmit={handleSubmit}>
         <Header>
           <h1>BEM VINDO AO SENAI OVERFLOW</h1>
@@ -63,6 +79,7 @@ function Login() {
         </Body>
       </FormLogin>
     </Container>
+    </>
   );
 }
 

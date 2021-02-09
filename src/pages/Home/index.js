@@ -22,11 +22,12 @@ import Modal from "../../components/modal";
 import Input from "../../components/input";
 import Select from "../../components/select";
 import Tag from "../../components/tag";
+import Loading from "../../components/loading";
+import Alert from "../../components/alert";
 
 function Profile() {
   const student = getUser();
 
-  console.log(student);
   return (
     <>
       <section>
@@ -72,7 +73,7 @@ function Awnser({ Answer }) {
   );
 }
 
-function Question({ question }) {
+function Question({ question, setShowLoading }) {
   const [questionAnswers, setQuestionAnswers] = useState([]);
 
   const [userAnswer, setUserAwnswer] = useState("");
@@ -80,8 +81,8 @@ function Question({ question }) {
   const [answersVisible, setAnswersVisible] = useState(false);
 
   useEffect(() => {
-    setQuestionAnswers(question.Answers)
-  }, [question.Answers])
+    setQuestionAnswers(question.Answers);
+  }, [question.Answers]);
 
   const handleUserAnswer = (event) => {
     setUserAwnswer(event.target.value);
@@ -96,6 +97,7 @@ function Question({ question }) {
     event.preventDefault();
 
     try {
+      setShowLoading(true);
       const response = await api.post(`questions/${question.id}/anwsers`, {
         answer: userAnswer,
       });
@@ -107,21 +109,23 @@ function Question({ question }) {
         answer: userAnswer,
         createdAt: response.data.createdAt,
         Student: {
-          id: aluno.id,
-          name: aluno.name,
+          id: aluno.studentId,
+          name: aluno.studentName,
         },
       };
 
       setQuestionAnswers([...questionAnswers, answserAdded]);
       setUserAwnswer("");
+      setShowLoading(false);
     } catch (error) {
-      console.error(error);
-      alert(error.response);
+      setShowLoading(false);
+      console.error(error.response);
+      alert(error);
     }
   };
 
   const listAnswers = (Answers) => {
-    return Answers.map((a) => <Awnser Answer={a} />);
+    return Answers.map((a) => <Awnser key={a.id} Answer={a} />);
   };
 
   const LoadAnswers = ({ show }) => {
@@ -140,12 +144,12 @@ function Question({ question }) {
       <section>
         <strong> {question.title} </strong>
         <p> {question.description} </p>
-        <img src={question.image} alt="question" />
+        {question.image ? <img src={question.image} alt="question" /> : <></>}
       </section>
 
       <footer>
         <h1 onClick={handleAnswersVisible}>
-          {question.Answers.length === 0 ? (
+          {questionAnswers.length === 0 ? (
             "Seja o primeiro a responder"
           ) : (
             <>
@@ -172,7 +176,7 @@ function Question({ question }) {
   );
 }
 
-function NewQuestion({handleReload}) {
+function NewQuestion({ handleReload, setShowLoading }) {
   const [newQuestion, setNewQuestion] = useState({
     title: "",
     description: "",
@@ -250,29 +254,29 @@ function NewQuestion({handleReload}) {
     data.append("title", newQuestion.title);
     data.append("description", newQuestion.description);
     data.append("gist", newQuestion.gist);
-    
+
     const categories = categoriesSel.reduce((s, c) => (s += c.id + ","), "");
 
-    data.append("categories", categories.substr(0 , categories.length - 1));
+    data.append("categories", categories.substr(0, categories.length - 1));
 
-    if(questionImage) data.append("image", questionImage);
+    if (questionImage) data.append("image", questionImage);
 
     try {
-
+      setShowLoading(true);
       await api.post("/questions", data, {
         headers: {
           "Content-type": "multipart/form-data",
-        }
-      })
+        },
+      });
 
       handleReload();
-
+      setShowLoading(false);
     } catch (error) {
-      console.log(error)
+      setShowLoading(false);
+      console.log(error);
     }
-
   };
-  
+
   return (
     <FormNewQuestion onSubmit={handleAddNewQuestion}>
       <Input
@@ -336,13 +340,18 @@ function Home() {
 
   const [reload, setReload] = useState(null);
 
+  const [ alertMessage, setAlertMessage ] = useState(undefined);
+
+  const [showLoading, setShowLoading] = useState(false);
+
   const [showNewQuestion, setShowNewQuestion] = useState(false);
 
   useEffect(() => {
     const loadQuestion = async () => {
+      setShowLoading(true);
       const resposnse = await api.get("/feed");
-
       setQuestions(resposnse.data);
+      setShowLoading(false);
     };
 
     loadQuestion();
@@ -361,6 +370,11 @@ function Home() {
 
   return (
     <>
+      <Alert
+        message={alertMessage}
+        type="error"
+      />
+      {showLoading && <Loading />}
       {showNewQuestion && (
         <Modal
           title="Faça uma pergunta"
@@ -368,7 +382,10 @@ function Home() {
             setShowNewQuestion(false);
           }}
         >
-          <NewQuestion handleReload={handleReload}/>
+          <NewQuestion
+            handleReload={handleReload}
+            setShowLoading={setShowLoading}
+          />
         </Modal>
       )}
 
@@ -384,7 +401,11 @@ function Home() {
           </ProfileContainer>
           <FeedContainer>
             {questions.map((q) => (
-              <Question key={q.id} question={q} />
+              <Question
+                key={q.id}
+                question={q}
+                setShowLoading={setShowLoading}
+              />
             ))}
           </FeedContainer>
           <ActionsContainer>
