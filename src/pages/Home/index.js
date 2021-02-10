@@ -17,22 +17,55 @@ import { format } from "date-fns";
 import defaultProfileImg from "../../assets/defaultProfilePhoto.png";
 import siteLogo from "../../assets/logo.png";
 import { api } from "../../services/api";
-import { signOut, getUser } from "../../services/security";
+import { signOut, getUser, setUser } from "../../services/security";
 import Modal from "../../components/modal";
 import Input from "../../components/input";
 import Select from "../../components/select";
 import Tag from "../../components/tag";
 import Loading from "../../components/loading";
 import Alert from "../../components/alert";
+import validSquaredImage from "../../utils";
 
-function Profile() {
-  const student = getUser();
+function Profile({handleReload, setShowLoading}) {
+  const [student, setStudent] = useState(getUser());
+
+  const handleImage = async (event) => {
+    if (!event.target.files[0]) return;
+
+    if(validSquaredImage(event.target.files[0]))
+
+    try {
+      const data = new FormData();
+
+      data.append("image", event.target.files[0]);
+      
+      setShowLoading(true);
+      const response = await api.post(`/students/${student.studentId}/image`, data);
+      setTimeout(() => {
+        setStudent({...student, studentImage: response.data.image});
+        handleReload();
+      }, 1000);
+      setUser({...student, studentImage: response.data.image});
+
+    } catch (error) {
+      setShowLoading(false);
+      console.error(error);
+    }
+  };
 
   return (
     <>
       <section>
-        <img src={defaultProfileImg} alt="Profile" />
-        <a href="a"> Editar Foto </a>
+        <img
+          src={
+            student.studentImage != null
+              ? student.studentImage
+              : defaultProfileImg
+          }
+          alt="Profile"
+        />
+        <label htmlFor="editProfileImage"> Editar Foto </label>
+        <input id="editProfileImage" type="file" onChange={handleImage}/>
       </section>
 
       <section>
@@ -55,11 +88,17 @@ function Profile() {
 
 function Awnser({ Answer }) {
   const student = getUser();
-
   return (
     <section>
       <header>
-        <img src={defaultProfileImg} alt="Response Author"></img>
+        <img
+          src={
+            Answer.Student.image != null
+              ? Answer.Student.image
+              : defaultProfileImg
+          }
+          alt="Response Author"
+        ></img>
         <strong>
           Por{" "}
           {Answer.Student.name === student.studentName
@@ -111,6 +150,7 @@ function Question({ question, setShowLoading }) {
         Student: {
           id: aluno.studentId,
           name: aluno.studentName,
+          image: aluno.studentImage,
         },
       };
 
@@ -136,7 +176,14 @@ function Question({ question, setShowLoading }) {
   return (
     <QuestionCard>
       <header>
-        <img src={defaultProfileImg} alt="Question Author" />
+        <img
+          src={
+            question.Student.image != null
+              ? question.Student.image
+              : defaultProfileImg
+          }
+          alt="Question Author"
+        />
         <strong> por {question.Student.name} </strong>
         <p>{format(new Date(question.createdAt), "dd/MM/yyyy hh:mm")}</p>
       </header>
@@ -340,7 +387,7 @@ function Home() {
 
   const [reload, setReload] = useState(null);
 
-  const [ alertMessage, setAlertMessage ] = useState(undefined);
+  const [alertMessage, setAlertMessage] = useState(undefined);
 
   const [showLoading, setShowLoading] = useState(false);
 
@@ -370,10 +417,7 @@ function Home() {
 
   return (
     <>
-      <Alert
-        message={alertMessage}
-        type="error"
-      />
+      <Alert message={alertMessage} type="error" />
       {showLoading && <Loading />}
       {showNewQuestion && (
         <Modal
@@ -397,7 +441,7 @@ function Home() {
 
         <Content>
           <ProfileContainer>
-            <Profile />
+            <Profile handleReload={handleReload} setShowLoading={setShowLoading}/>
           </ProfileContainer>
           <FeedContainer>
             {questions.map((q) => (

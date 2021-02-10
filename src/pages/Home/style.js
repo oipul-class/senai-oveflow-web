@@ -83,6 +83,21 @@ export const ProfileContainer = styled.div`
         align-items: center;
         gap: 4px;
 
+        > input[type="file"] {
+            display: none;
+        }
+
+        > label {
+
+            user-select: none;
+            cursor: pointer;
+            transition: .2s;
+            :hover {
+                color: var(--primary);
+                text-decoration: underline;
+            }
+        }
+
         img {
             width: 35%;
             border-radius: 50%;
