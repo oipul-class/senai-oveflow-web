@@ -9,10 +9,13 @@ import {
   Logo,
   IconSignOut,
   FormNewQuestion,
+  GistIcon,
+  ContainerGist,
 } from "./style";
 import { useHistory } from "react-router-dom";
 import { useEffect, useState, useRef } from "react";
 import { format } from "date-fns";
+import ReactEmbedGist from 'react-embed-gist';
 
 import defaultProfileImg from "../../assets/defaultProfilePhoto.png";
 import siteLogo from "../../assets/logo.png";
@@ -112,7 +115,7 @@ function Awnser({ Answer }) {
   );
 }
 
-function Question({ question, setShowLoading }) {
+function Question({ question, setShowLoading, setCurrentGist }) {
   const [questionAnswers, setQuestionAnswers] = useState([]);
 
   const [userAnswer, setUserAwnswer] = useState("");
@@ -173,6 +176,7 @@ function Question({ question, setShowLoading }) {
     else return <></>;
   };
 
+
   return (
     <QuestionCard>
       <header>
@@ -186,6 +190,7 @@ function Question({ question, setShowLoading }) {
         />
         <strong> por {question.Student.name} </strong>
         <p>{format(new Date(question.createdAt), "dd/MM/yyyy hh:mm")}</p>
+        {question.gist && <GistIcon onClick={() => {setCurrentGist(question.gist)}}/>}
       </header>
 
       <section>
@@ -380,6 +385,25 @@ function NewQuestion({ handleReload, setShowLoading }) {
   );
 }
 
+function Gist({gist, handleClose}) {
+  
+  
+  if (gist) {
+
+    const formatedGist = gist.split(".com/").pop();
+
+    return (
+      <Modal title="Exemplo de codigo" handleClose={() => {handleClose(undefined)}}>
+        <ContainerGist>
+          <ReactEmbedGist gist={formatedGist}/>
+        </ContainerGist>
+      </Modal>
+      )
+     
+  }
+    else return (<></>)
+}
+
 function Home() {
   const history = useHistory();
 
@@ -392,6 +416,8 @@ function Home() {
   const [showLoading, setShowLoading] = useState(false);
 
   const [showNewQuestion, setShowNewQuestion] = useState(false);
+
+  const [currentGist, setCurrentGist] = useState(undefined);
 
   useEffect(() => {
     const loadQuestion = async () => {
@@ -419,6 +445,8 @@ function Home() {
     <>
       <Alert message={alertMessage} type="error" />
       {showLoading && <Loading />}
+      <Gist gist={currentGist} handleClose={setCurrentGist}/>
+     
       {showNewQuestion && (
         <Modal
           title="Faça uma pergunta"
@@ -449,6 +477,7 @@ function Home() {
                 key={q.id}
                 question={q}
                 setShowLoading={setShowLoading}
+                setCurrentGist={setCurrentGist}
               />
             ))}
           </FeedContainer>
