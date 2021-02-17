@@ -16,6 +16,23 @@ export const GlobalStyles = createGlobalStyle`
     box-sizing: border-box;
   }
 
+  
+
+  ::-webkit-scrollbar {
+    width: 4px;
+    background-color: var(--darkGray);
+  }
+
+  /* mudando a trilha onde a rolagem passa */
+  ::-webkit-scrollbar-track {   
+    background-color: var(--darkGray);
+  }
+
+  ::-webkit-scrollbar-thumb {
+    border-radius: 2px;
+    background-color: var(--light);
+  }
+
   body {
     font-family: 'Franklin Gothic Medium', 'Arial Narrow', Arial, sans-serif;
     color: var(--light); /* usando a varaivel */
@@ -61,4 +78,14 @@ export const GlobalStyles = createGlobalStyle`
       color: var(--primary);
     }
   }
+
+  textarea, select {
+    font-size: 16px;
+    padding: 5px;
+    border-radius: 4px;
+
+    resize: none;
+  }
+
+  
 `;
