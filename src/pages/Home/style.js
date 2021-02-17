@@ -25,6 +25,16 @@ export const Header = styled.header`
     border-bottom: 1px solid var(--darkGray);
 
     box-shadow: 0px 1px 5px var(--darkGray);
+
+    div{
+    width: 650px;
+    display: flex;
+    justify-content:space-between;
+    align-items: center;
+    >input{
+      width: 500px;
+    }
+  }
 `;
 
 export const Logo = styled.img`
