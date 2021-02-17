@@ -431,7 +431,7 @@ function Home() {
 
   const [feedOffsetValue, setFeedOffsetValue] = useState(0);
 
-  const [notMoreToLoad, setNotMoreToLoad] = useState(false);
+  const [notMoreToLoad, setNotMoreToLoad] =  useState(false);
 
   useEffect(() => {
     const loadQuestion = async () => {
