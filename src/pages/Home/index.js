@@ -468,6 +468,8 @@ function Home() {
   const handleAddFeedQuestions = () => {
     if (feedUpdating) return;
 
+    if (search.length === 0) return;
+
     if (!notMoreToLoad) {
       setFeedUpdating(true);
       setTimeout(async () => {
