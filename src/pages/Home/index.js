@@ -23,11 +23,13 @@ import { api } from "../../services/api";
 import { signOut, getUser, setUser } from "../../services/security";
 import Modal from "../../components/modal";
 import Input from "../../components/input";
+import InputSearch from "../../components/inputSearch";
 import Select from "../../components/select";
 import Tag from "../../components/tag";
 import Loading from "../../components/loading";
 import Alert from "../../components/alert";
 import validSquaredImage from "../../utils";
+import SpinnerLoading from "../../components/spinnerLoading";
 
 function Profile({ handleReload, setShowLoading }) {
   const [student, setStudent] = useState(getUser());
@@ -425,22 +427,22 @@ function Home() {
 
   const [currentGist, setCurrentGist] = useState(undefined);
 
-  const [searchQuestion, setSearchQuestion] = useState("");
+  const [search, setSearch] = useState("");
 
   const [feedUpdating, setFeedUpdating] = useState(false);
 
-  const [feedOffsetValue, setFeedOffsetValue] = useState(0);
+  const [pageValue, setPageValue] = useState(1);
 
   const [notMoreToLoad, setNotMoreToLoad] = useState(false);
 
   useEffect(() => {
     const loadQuestion = async () => {
       setShowLoading(true);
-      const resposnse = await api.post("/feed", {
-        feedOffset: feedOffsetValue,
-        feedLimit: 5,
-      });
-      setQuestions(resposnse.data);
+      const response = await api.post(`/feed?page=${pageValue}`);
+
+      setPageValue(pageValue + 1);
+
+      setQuestions(response.data);
       setShowLoading(false);
     };
 
@@ -455,67 +457,67 @@ function Home() {
 
   function handleReload() {
     setShowNewQuestion(false);
+    setShowLoading(false);
+    setNotMoreToLoad(false);
+    setFeedUpdating(false);
+    setPageValue(1);
+    setQuestions([]);
     setReload(Math.random());
   }
 
-  const searchSubmit = async (event) => {
-    event.preventDefault();
-    setShowLoading(true);
-
-    try {
-      const response = await api.post("/feed/search", {
-        searchParams: searchQuestion,
-      });
-
-      setQuestions(response.data);
-      setShowLoading(false);
-      setSearchQuestion("");
-      console.log(response);
-    } catch (error) {
-      setAlertMessage(error);
-      setShowLoading(false);
-    }
-  };
-
-  const handleSearch = (event) => {
-    setSearchQuestion(event.target.value);
-  };
-
-  const handleAddFeedQuestions = async () => {
-    if (searchQuestion.length > 0) return;
-
+  const handleAddFeedQuestions = () => {
     if (feedUpdating) return;
 
     if (!notMoreToLoad) {
-      try {
-        setShowLoading(true);
-        setFeedUpdating(true);
-        setFeedOffsetValue(feedOffsetValue + 5);
-        console.log(feedOffsetValue);
-        const response = await api.post("/feed", {
-          feedOffset: feedOffsetValue,
-          feedLimit: 5,
-        });
+      setFeedUpdating(true);
+      setTimeout(async () => {
+        try {
+          const response = await api.post(`/feed?page=${pageValue}`);
 
-        setQuestions([...questions, ...response.data]);
+          setPageValue(pageValue + 1);
 
-        setShowLoading(false);
-        setTimeout(setFeedUpdating(false), 200);
-        if (response.data.length === 0) {
-          setNotMoreToLoad(true);
+          console.log("page: " + pageValue);
+
+          console.log(response.data);
+
+          setQuestions([...questions, ...response.data]);
+
+          setFeedUpdating(false);
+          if (response.data.length === 0) {
+            setNotMoreToLoad(true);
+          }
+        } catch (error) {
+          console.log(error);
+          setFeedUpdating(false);
         }
-      } catch (error) {
-        console.log(error);
-        setShowLoading(false);
-        setFeedUpdating(false);
-      }
+      }, 500);
     }
   };
 
   const handleScroll = (event) => {
     const { scrollHeight, scrollTop, clientHeight } = event.target;
-    if (Math.floor(scrollHeight - scrollTop) === clientHeight) {
+    if (scrollTop + clientHeight > scrollHeight - 50) {
       handleAddFeedQuestions();
+    }
+  };
+
+  const handleSearch = async (event) => {
+    setSearch(event.target.value);
+
+    if (event.target.value.length === 0) handleReload();
+
+    if (event.target.value.length < 4) return;
+
+    try {
+      setFeedUpdating(true);
+      const response = await api.get("/questions/search", {
+        params: { searchParams: event.target.value },
+      });
+
+      setFeedUpdating(false);
+      setQuestions(response.data);
+    } catch (error) {
+      console.log(error);
     }
   };
 
@@ -542,18 +544,7 @@ function Home() {
       <Container>
         <Header>
           <Logo src={siteLogo} onClick={handleReload} />
-          <form onSubmit={searchSubmit}>
-            <div>
-              <Input
-                id="searchBar"
-                type="text"
-                label="Pesquise algo que te interessa"
-                value={searchQuestion}
-                handler={handleSearch}
-              />
-              <button>Procurar</button>
-            </div>
-          </form>
+          <InputSearch handler={handleSearch} value={search} />
           <IconSignOut onClick={handleSignOut} />
         </Header>
 
@@ -565,6 +556,7 @@ function Home() {
             />
           </ProfileContainer>
           <FeedContainer onScroll={handleScroll}>
+            {questions.length === 0 && search.length > 4 && "nenhuma questão encontrada"}
             {questions.map((q) => (
               <Question
                 key={q.id}
@@ -573,7 +565,10 @@ function Home() {
                 setCurrentGist={setCurrentGist}
               />
             ))}
+            {feedUpdating && <SpinnerLoading />}
+            {notMoreToLoad && "Isso é tudo"}
           </FeedContainer>
+
           <ActionsContainer>
             <button
               onClick={() => {
